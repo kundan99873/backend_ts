@@ -24,4 +24,14 @@ const dbConnection = mysql.createPool({
   queueLimit: 0,
 });
 
+export async function isDbConnected() {
+  try {
+    const conn = await dbConnection.getConnection();
+    console.log("Database connection established successfully");
+    conn.release();
+  } catch (error) {
+    console.error("Failed to connect to the database:", error);
+  }
+}
+
 export default dbConnection;

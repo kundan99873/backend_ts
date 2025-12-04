@@ -1,9 +1,10 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 
 const errorMiddleware = (
   err: any,
   req: Request,
   res: Response,
+  next: NextFunction
 ) => {
   console.error("🔥 Error:", err);
 
@@ -13,6 +14,7 @@ const errorMiddleware = (
   return res.status(statusCode).json({
     success: false,
     message,
+    ...(err.errors ? { error: err.errors } : {}),
   });
 };
 
