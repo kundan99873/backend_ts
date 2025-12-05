@@ -157,4 +157,6 @@ const verifyEmailAddress = asyncHandler(async (req: Request, res: Response) => {
   const { verify_token, user_id } = req.body;
 })
 
+
+
 export { registerUser, getUsers, loginUser, getUserDetailsById };

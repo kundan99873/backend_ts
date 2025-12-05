@@ -10,9 +10,11 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
 
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as any;
 
+    if(!decoded) throw new ApiError(401, "Invalid or expired token");
+
     const userId = decryptData(decoded.userId);
 
-    req.body.userId = userId;
+    req.user = userId;
     next();
   } catch (error) {
     next(new ApiError(401, "Invalid or expired token"));
