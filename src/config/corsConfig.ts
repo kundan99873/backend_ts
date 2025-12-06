@@ -1,7 +1,7 @@
 import cors, { type CorsOptions } from "cors";
 
 const whitelist: string[] = [
-  process.env.NODE_ENV === "development" ? "http://localhost:3000" : "",
+  process.env.NODE_ENV === "development" ? "http://localhost:5173" : "",
 ].filter(Boolean);
 
 const corsOptions: CorsOptions = {

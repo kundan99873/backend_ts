@@ -69,14 +69,24 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(500, "Please verify your email address before login");
 
   const accessToken = jwt.sign(
-    { userId: encryptData(users[0]?.user_id) },
+    {
+      userId: encryptData({
+        user_id: users[0]?.user_id,
+        role_id: users[0]?.role_id,
+      }),
+    },
     process.env.ACCESS_TOKEN_SECRET!,
     {
       expiresIn: "15m",
     }
   );
   const refreshToken = jwt.sign(
-    { userId: encryptData(users[0]?.user_id) },
+    {
+      userId: encryptData({
+        user_id: users[0]?.user_id,
+        role_id: users[0]?.role_id,
+      }),
+    },
     process.env.REFRESH_TOKEN_SECRET!,
     {
       expiresIn: "7d",
@@ -88,6 +98,51 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
   const [updateUser] = await dbConnection.query<ResultSetHeader>(
     updateLoginQuery,
     [refreshToken, users[0]?.user_id]
+  );
+
+  if (updateUser.affectedRows === 0) {
+    throw new ApiError(500, "Failed to update login info");
+  }
+
+  return res
+    .cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60 * 1000,
+    })
+    .cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    })
+    .status(200)
+    .json(new ApiResponse("Login Successfully"));
+});
+
+const googleLogin = asyncHandler(async (req: Request, res: Response) => {
+  const user = req.user;
+
+  const accessToken = jwt.sign(
+    { userId: encryptData({ id: user?.user_id, role: user?.role_id }) },
+    process.env.ACCESS_TOKEN_SECRET!,
+    {
+      expiresIn: "15m",
+    }
+  );
+  const refreshToken = jwt.sign(
+    { userId: encryptData({ id: user?.user_id, role: user?.role_id }) },
+    process.env.REFRESH_TOKEN_SECRET!,
+    {
+      expiresIn: "7d",
+    }
+  );
+  const updateLoginQuery = `UPDATE user_details SET refresh_token = ?, last_login_at = NOW() WHERE user_id = ?`;
+
+  const [updateUser] = await dbConnection.query<ResultSetHeader>(
+    updateLoginQuery,
+    [refreshToken, user?.user_id]
   );
 
   if (updateUser.affectedRows === 0) {
@@ -207,7 +262,7 @@ const verifyEmailAddress = asyncHandler(async (req: Request, res: Response) => {
   if (dayjs() < user[0]?.verify_token_expiry) {
     const verifyToken = crypto.randomBytes(20).toString("hex");
 
-    const updateTokenQuery = `UPDATE user_details set verify_token = ?, verify_token_expiry = DATE_ADD(NOW(), INTERVAL 10 MINUTE)) where user_id = ?`;
+    const updateTokenQuery = `UPDATE user_details SET verify_token = ?, verify_token_expiry = DATE_ADD(NOW(), INTERVAL 10 MINUTE)) WHERE user_id = ?`;
     const [updateUser] = await dbConnection.query<ResultSetHeader>(
       updateTokenQuery,
       [verifyToken, userId]
@@ -220,10 +275,68 @@ const verifyEmailAddress = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
+const changePassword = asyncHandler(async (req: Request, res: Response) => {
+  const { password, new_password } = req.body;
+
+  const getUserQuery = `SELECT ud.password FROM user_details ud WHERE ud.user_id = ?`;
+
+  const [user] = await dbConnection.query<RowDataPacket[]>(getUserQuery, [
+    req.user?.user_id,
+  ]);
+  const prevPassword = user[0]?.password;
+
+  const comparePass = bcrypt.compare(password, prevPassword);
+
+  if (!comparePass) throw new ApiError(401, "Incorrect Previous Password");
+
+  const hashedPassword = await bcrypt.hash(new_password, 10);
+  const updatePassQuery = `UPDATE user_details SET password = ? WHERE user_id = ?`;
+
+  const [updatePassword] = await dbConnection.query<ResultSetHeader>(
+    updatePassQuery,
+    [hashedPassword, req.user?.user_id]
+  );
+  if (updatePassword.affectedRows === 0)
+    throw new ApiError(400, "Failed to update the password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse("Password Updated Successfully!!!"));
+});
+
+const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if(!email) throw new ApiError(401, "Email Address is required");
+  const getUserQuery = `SELECT user_id FROM user_details WHERE email =  ?`;
+  const [user] = await dbConnection.query<RowDataPacket[]>(
+    getUserQuery,
+    email
+  );
+
+  if(user.length == 0) throw new ApiError(401, "Email Address not found");
+
+    const forgotPasswordToken = crypto.randomBytes(20).toString("hex");
+
+    const forgotQuery = `UPDATE user_details SET forgot_password_token = ?, forgot_password_expiry = DATE_ADD(NOW(), INTERVAL 10 MINUTE) WHERE ud.email = ?`;
+
+    const [updateUser] = await dbConnection.query<ResultSetHeader>(forgotQuery, [forgotPasswordToken, email]);
+
+    if(updateUser.affectedRows === 0) throw new ApiError(400, "");
+
+
+
+
+
+});
+
 export {
   registerUser,
   loginUser,
+  googleLogin,
   logoutUser,
   refreshAccessToken,
   verifyEmailAddress,
+  changePassword,
+  forgotPassword,
 };

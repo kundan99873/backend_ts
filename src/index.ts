@@ -4,21 +4,41 @@ import compression from "compression";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
+import passport from "./helper/passport.js";
+import session from "express-session";
+
 import errorMiddleware from "./middlewares/error.middleware.js";
 import userRouter from "./routes/user.route.js";
 import { ApiError } from "./utils/apiError.js";
 import corsConfig from "./config/corsConfig.js";
-
 
 const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "mysecret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false,
+      httpOnly: true,
+    },
+  })
+);
+
 app.use(helmet());
 app.use(compression());
 app.use(corsConfig);
-app.use(cookieParser())
+app.use(cookieParser());
+
+app.use(passport.initialize());
+app.use(passport.session());
+// app.use(passport.initialize());
+// app.use(passport.session());
+
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
