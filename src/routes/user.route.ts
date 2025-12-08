@@ -1,14 +1,17 @@
 import { Router } from "express";
 import upload from "../middlewares/image.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
-import { registerUserSchema } from "../validations/user.validation.js";
+import { changePasswordSchema, registerUserSchema, resetPasswordSchema } from "../validations/user.validation.js";
 import {
   changePassword,
+  forgotPassword,
   googleLogin,
   loginUser,
   logoutUser,
   refreshAccessToken,
   registerUser,
+  resetPassword,
+  verifyPasswordToken,
 } from "../controllers/auth.controller.js";
 import verifyToken from "../middlewares/auth.middleware.js";
 import passport from "../helper/passport.js";
@@ -31,9 +34,12 @@ router
   );
 
 router.route("/refresh-token").post(refreshAccessToken);
+router.route("/forgot-password").post(forgotPassword);
+router.route("/verify-forgot").post(verifyPasswordToken);
+router.route("/reset-password").post(validate(resetPasswordSchema), resetPassword);
 
 router.use(verifyToken);
 router.route("/logout").post(logoutUser);
-router.route("/change-password").post(changePassword);
+router.route("/change-password").post(validate(changePasswordSchema), changePassword);
 
 export default router;
