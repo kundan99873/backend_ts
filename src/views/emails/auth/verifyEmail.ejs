@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Email Verification Required</title>
+
+  <style>
+    body {
+      background: #f0f3f8;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      padding: 0;
+      margin: 0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #ffffff;
+      padding: 35px;
+      border-radius: 14px;
+      border: 1px solid #e0e4eb;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    }
+
+    h2 {
+      color: #1d3557;
+      text-align: center;
+      font-size: 26px;
+      margin-bottom: 10px;
+    }
+
+    p {
+      color: #444;
+      font-size: 16px;
+      line-height: 1.7;
+      margin: 12px 0;
+    }
+
+    .highlight {
+      color: #1d3557;
+      font-weight: 600;
+    }
+
+    .btn-wrapper {
+      text-align: center;
+      margin: 35px 0;
+    }
+
+    .btn {
+      display: inline-block;
+      background: #1d3557;
+      color: #fff !important;
+      padding: 14px 30px;
+      font-size: 17px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: 0.2s ease-in-out;
+    }
+
+    .btn:hover {
+      background: #16324a;
+    }
+
+    .note {
+      font-size: 14px;
+      color: #666;
+      margin-top: 20px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 13px;
+      color: #7a7a7a;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>🔐 Verify Your Email</h2>
+
+    <p>Hi <span class="highlight"><%= name %></span>,</p>
+
+    <p>
+      Thank you for creating an account with us.  
+      Before you can start using all features, we need to confirm your email address.
+    </p>
+
+    <p>Please click the button below to verify your account:</p>
+
+    <div class="btn-wrapper">
+      <a href="<%= verifyUrl %>" class="btn">Verify Email Now</a>
+    </div>
+
+    <p class="note">
+      If you didn’t request this, you can safely ignore this email.
+    </p>
+
+    <div class="footer">
+      © <%= year %> MyApp — All Rights Reserved.
+    </div>
+  </div>
+</body>
+</html>

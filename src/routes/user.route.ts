@@ -11,6 +11,7 @@ import {
   refreshAccessToken,
   registerUser,
   resetPassword,
+  verifyEmailAddress,
   verifyPasswordToken,
 } from "../controllers/auth.controller.js";
 import verifyToken from "../middlewares/auth.middleware.js";
@@ -34,6 +35,7 @@ router
   );
 
 router.route("/refresh-token").post(refreshAccessToken);
+router.route("/verify-email").post(verifyEmailAddress);
 router.route("/forgot-password").post(forgotPassword);
 router.route("/verify-forgot").post(verifyPasswordToken);
 router.route("/reset-password").post(validate(resetPasswordSchema), resetPassword);

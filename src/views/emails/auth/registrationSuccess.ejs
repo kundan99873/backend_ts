@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Verify Your Account</title>
+
+  <style>
+    body {
+      background: #eef2f7;
+      font-family: "Segoe UI", Arial, sans-serif;
+      padding: 0;
+      margin: 0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #ffffff;
+      padding: 35px;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+      border: 1px solid #e6e9ef;
+    }
+
+    h2 {
+      color: #1d3557;
+      text-align: center;
+      font-size: 28px;
+      font-weight: 600;
+    }
+
+    p {
+      color: #444;
+      line-height: 1.7;
+      font-size: 16px;
+      margin: 12px 0;
+    }
+
+    .highlight {
+      color: #1d3557;
+      font-weight: bold;
+    }
+
+    .btn-wrapper {
+      text-align: center;
+      margin: 30px 0;
+    }
+
+    .btn {
+      display: inline-block;
+      background: #1d3557;
+      color: #fff !important;
+      padding: 14px 26px;
+      border-radius: 6px;
+      font-size: 17px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: 0.2s;
+    }
+
+    .btn:hover {
+      background: #16324a;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 13px;
+      color: #7a7a7a;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>🎉 Registration Successful</h2>
+
+    <p>Hi <span class="highlight"><%= name %></span>,</p>
+
+    <p>
+      Your account has been created successfully.  
+      To activate your account and start using our platform, please verify your email.
+    </p>
+
+    <div class="btn-wrapper">
+      <a href="<%= verifyUrl %>" class="btn">Verify Your Email</a>
+    </div>
+
+    <p>If you did not create this account, please ignore this email.</p>
+
+    <div class="footer">
+      © <%= year %> MyApp — All Rights Reserved.
+    </div>
+  </div>
+</body>
+</html>

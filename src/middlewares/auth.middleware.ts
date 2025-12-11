@@ -5,7 +5,7 @@ import { decryptData } from "../utils/utils.js";
 
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = req.cookies.accessToken;
+    const token = req.cookies.accessToken || req.header("Authorization")?.replace("Bearer ", "") as string;
     if (!token) throw new ApiError(401, "Access denied, token missing");
 
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as any;
