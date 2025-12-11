@@ -11,11 +11,18 @@ import errorMiddleware from "./middlewares/error.middleware.js";
 import userRouter from "./routes/user.route.js";
 import { ApiError } from "./utils/apiError.js";
 import corsConfig from "./config/corsConfig.js";
+import { fileURLToPath } from "url";
+import path from "path";
 
 const PORT = process.env.PORT || 3000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+
 
 app.use(
   session({
@@ -51,7 +58,7 @@ if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
 else app.use(morgan("combined"));
 
 app.get("/", (_, res) => {
-  res.send("Hello, World!");
+  res.sendFile(path.join(__dirname, "views", "home/index.html"));
 });
 
 app.use("/api/users", userRouter);
