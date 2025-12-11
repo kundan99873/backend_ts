@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type NextFunction, type Request } from "express";
 import morgan from "morgan";
 import compression from "compression";
 import helmet from "helmet";
@@ -21,6 +21,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.set("trust proxy", true);
 
 
 
@@ -43,8 +44,6 @@ app.use(cookieParser());
 
 app.use(passport.initialize());
 app.use(passport.session());
-// app.use(passport.initialize());
-// app.use(passport.session());
 
 app.use(
   rateLimit({
@@ -62,8 +61,15 @@ app.get("/", (_, res) => {
 });
 
 app.use("/api/users", userRouter);
+app.get("/test", (req, res) => {
+    res.json({
+      ip: req.ip,
+      ips: req.ips,
+      data: req.socket.remoteAddress
+    })
+})
 
-app.use((req, _, next) => {
+app.use((req: Request, _, next: NextFunction) => {
   next(new ApiError(404, "Route not found", { route: req.originalUrl }));
 });
 
