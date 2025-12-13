@@ -46,7 +46,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
   if (!(result as any).affectedRows)
     throw new ApiError(500, "Failed to register user");
 
-  const sendMail = await sendTemplateEmail({
+  await sendTemplateEmail({
     to: email,
     subject: "Registration Successful",
     template: "/auth/registrationSuccess.ejs",
@@ -58,7 +58,6 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
       }/verify-email/token=${verifyToken}&user=${encryptData(email)}`,
     },
   });
-  console.log({ sendMail });
 
   return res.status(201).json(new ApiResponse("User registered successfully"));
 });
@@ -295,7 +294,6 @@ const verifyEmailAddress = asyncHandler(async (req: Request, res: Response) => {
   const email = decryptData(req.body.user);
 
   if (!email) throw new ApiError(401, "Invalid token or expired");
-  console.log({ token, email });
 
   const userDetailsQuery = `SELECT (ud.verify_token_expiry < NOW()) AS is_expired, name, ud.user_id FROM user_details ud where ud.verify_token = ? AND ud.email = ?`;
   const [user] = await dbConnection.query<RowDataPacket[]>(userDetailsQuery, [
@@ -303,7 +301,6 @@ const verifyEmailAddress = asyncHandler(async (req: Request, res: Response) => {
     email,
   ]);
 
-  console.log(user);
   if (user.length === 0) throw new ApiError(401, "Invalid token or expired");
 
   const userId = user[0]?.user_id;
@@ -381,7 +378,7 @@ const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
   const { email } = req.body;
 
   if (!email) throw new ApiError(401, "Email address is required");
-  const getUserQuery = `SELECT user_id FROM user_details WHERE email =  ?`;
+  const getUserQuery = `SELECT user_id, name FROM user_details WHERE email =  ?`;
   const [user] = await dbConnection.query<RowDataPacket[]>(getUserQuery, email);
 
   if (user.length == 0) throw new ApiError(401, "Email address not found");
@@ -389,10 +386,6 @@ const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
   const forgotPasswordToken = crypto.randomBytes(20).toString("hex");
 
   const forgotQuery = `UPDATE user_details SET forgot_password_token = ?, forgot_password_expiry = DATE_ADD(NOW(), INTERVAL 10 MINUTE) WHERE ud.email = ?`;
-
-  const forgotUrl = `${
-    process.env.FRONTEND_URL
-  }/forgot-password/token=${forgotPasswordToken}&user=${encryptData(email)}`;
 
   const [updateUser] = await dbConnection.query<ResultSetHeader>(forgotQuery, [
     forgotPasswordToken,
@@ -402,12 +395,24 @@ const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
   if (updateUser.affectedRows === 0)
     throw new ApiError(400, "Failed to update the forgot password request");
 
+  await sendTemplateEmail({
+    to: email,
+    subject: "Reset Your Password",
+    template: "/auth/resetPassword.ejs",
+    data: {
+      name: user[0]?.name,
+      year: new Date().getFullYear(),
+      resetUrl: `${
+        process.env.FRONTEND_URL
+      }/verify-email/token=${forgotPasswordToken}&user=${encryptData(email)}`,
+    },
+  });
+
   return res
     .status(200)
     .json(
       new ApiResponse(
-        "An reset password mail send to your registered email address",
-        { url: forgotUrl }
+        "An reset password mail send to your registered email address"
       )
     );
 });
@@ -447,7 +452,7 @@ const resetPassword = asyncHandler(async (req: Request, res: Response) => {
   const email = decryptData(user);
   if (!forgot_password_token || !email)
     throw new ApiError(400, "Invalid Forgot Password Token");
-  const getUserQuery = `SELECT ud.user_id from user_details ud where ud.email = ? AND ud.forgot_password_token = ?`;
+  const getUserQuery = `SELECT ud.user_id, ud.name from user_details ud where ud.email = ? AND ud.forgot_password_token = ?`;
 
   const [users] = await dbConnection.query<RowDataPacket[]>(getUserQuery, [
     email,
@@ -468,6 +473,16 @@ const resetPassword = asyncHandler(async (req: Request, res: Response) => {
   );
   if (updatePassword.affectedRows === 0)
     throw new ApiError(400, "Failed to update password");
+
+    await sendTemplateEmail({
+    to: email,
+    subject: "Registration Successful",
+    template: "/auth/registrationSuccess.ejs",
+    data: {
+      name: user[0]?.name,
+      year: new Date().getFullYear(),
+    },
+  });
 
   return res.status(200).json(new ApiResponse("Password Updated Successfully"));
 });
