@@ -8,7 +8,7 @@ const dbUser: string | undefined = process.env.DB_USER;
 const dbPassword: string | undefined = process.env.DB_PASSWORD;
 const dbName: string | undefined = process.env.DB_NAME;
 
-if (!dbHost || !dbUser || !dbPassword || !dbName) {
+if (!dbHost || !dbUser || !dbName) {
   throw new Error(
     "Missing required environment variables: DB_HOST, DB_USER, DB_PASSWORD, or DB_NAME"
   );
@@ -17,7 +17,7 @@ if (!dbHost || !dbUser || !dbPassword || !dbName) {
 const dbConnection = mysql.createPool({
   host: dbHost,
   user: dbUser,
-  password: dbPassword,
+  password: dbPassword!,
   database: dbName,
   waitForConnections: true,
   connectionLimit: 10,

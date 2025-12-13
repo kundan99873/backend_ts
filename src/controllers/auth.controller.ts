@@ -66,7 +66,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
 const loginUser = asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
-  const getUserQuery = `SELECT ud.user_id, ud.email, ud.password, ud.email_verified FROM user_details ud WHERE ud.email = ?`;
+  const getUserQuery = `SELECT ud.user_id, ud.email, ud.password, ud.email_verified, role_id FROM user_details ud WHERE ud.email = ?`;
 
   const [users] = await dbConnection.query<RowDataPacket[]>(getUserQuery, [
     email,
@@ -104,25 +104,21 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(500, "Please verify your email address before login");
   }
 
+  const secretData = encryptData({
+    user_id: users[0]?.user_id,
+    role_id: users[0]?.role_id,
+  });
+
+  console.log({ secretData });
   const accessToken = jwt.sign(
-    {
-      userId: encryptData({
-        user_id: users[0]?.user_id,
-        role_id: users[0]?.role_id,
-      }),
-    },
+    { data: secretData },
     process.env.ACCESS_TOKEN_SECRET!,
     {
       expiresIn: "15m",
     }
   );
   const refreshToken = jwt.sign(
-    {
-      userId: encryptData({
-        user_id: users[0]?.user_id,
-        role_id: users[0]?.role_id,
-      }),
-    },
+    { data: secretData },
     process.env.REFRESH_TOKEN_SECRET!,
     {
       expiresIn: "7d",
@@ -160,15 +156,20 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
 const googleLogin = asyncHandler(async (req: Request, res: Response) => {
   const user = req.user;
 
+  const secretData = encryptData({
+    user_id: user?.user_id,
+    role_id: user?.role_id,
+  });
+
   const accessToken = jwt.sign(
-    { userId: encryptData({ id: user?.user_id, role: user?.role_id }) },
+    { data: secretData },
     process.env.ACCESS_TOKEN_SECRET!,
     {
       expiresIn: "15m",
     }
   );
   const refreshToken = jwt.sign(
-    { userId: encryptData({ id: user?.user_id, role: user?.role_id }) },
+    { data: secretData },
     process.env.REFRESH_TOKEN_SECRET!,
     {
       expiresIn: "7d",
@@ -207,7 +208,7 @@ const logoutUser = asyncHandler(async (req: Request, res: Response) => {
   const logoutQuery = `UPDATE user_details set refresh_token = NULL where user_id = ?`;
 
   const [updateUser] = await dbConnection.query<ResultSetHeader>(logoutQuery, [
-    userId,
+    userId?.user_id,
   ]);
 
   if (updateUser.affectedRows === 0) {
@@ -233,35 +234,40 @@ const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(401, "Invalid or expired refresh token");
   }
 
-  const userId = decryptData(decoded.userId);
-  if (!userId) throw new ApiError(401, "Invalid refresh token");
+  const userDetails = decryptData(decoded);
+  if (!userDetails) throw new ApiError(401, "Invalid refresh token");
 
   const [rows] = await dbConnection.query<RowDataPacket[]>(
     "SELECT refresh_token FROM user_details WHERE user_id = ?",
-    [userId]
+    [userDetails.user_id]
   );
 
   if (!rows.length || rows[0]?.refresh_token !== oldRefreshToken) {
     throw new ApiError(401, "Refresh token does not match");
   }
 
-  const encryptedUserId = encryptData(userId);
+  const secretData = encryptData({
+    user_id: userDetails?.user_id,
+    role_id: userDetails?.role_id,
+  });
 
   const accessToken = jwt.sign(
-    { userId: encryptedUserId },
+    { data: secretData },
     process.env.ACCESS_TOKEN_SECRET!,
-    { expiresIn: "15m" }
+    {
+      expiresIn: "15m",
+    }
   );
 
   const newRefreshToken = jwt.sign(
-    { userId: encryptedUserId },
+    secretData,
     process.env.REFRESH_TOKEN_SECRET!,
     { expiresIn: "7d" }
   );
 
   const [updateUser] = await dbConnection.query<ResultSetHeader>(
     `UPDATE user_details SET refresh_token = ?, last_login_at = NOW() WHERE user_id = ?`,
-    [newRefreshToken, userId]
+    [newRefreshToken, userDetails?.user_id]
   );
 
   if (updateUser.affectedRows === 0)
@@ -321,7 +327,9 @@ const verifyEmailAddress = asyncHandler(async (req: Request, res: Response) => {
       data: {
         name: user[0]?.name,
         year: new Date().getFullYear(),
-        verifyUrl: `${process.env.FRONTEND_URL}/verify-email/token=${verifyToken}&user=${encryptData(email)}`,
+        verifyUrl: `${
+          process.env.FRONTEND_URL
+        }/verify-email/token=${verifyToken}&user=${encryptData(email)}`,
       },
     });
 
